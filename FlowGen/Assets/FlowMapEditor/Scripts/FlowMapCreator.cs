@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityEditor;
 using System;
 
-
 public class FlowMapCreator : MonoBehaviour
 {
 
@@ -87,23 +86,47 @@ public class FlowMapCreator : MonoBehaviour
     public Texture2D currentFlowMap;
 
     [HideInInspector]
-    public Vector3 previousMousePos;
+    public Vector3 previousMousePos, mouseDir;
+
 
     void Start () {
+        IntitializeFlow();
+    }
+
+    public void IntitializeFlow()
+    {
+        vertPoints = new List<Vector3>();
+        vertPointEnds = new List<Vector3>();
+        vectorMagnitude = new List<float>();
+        vertDirection = new List<Vector2>();
+
+        foreach (GameObject item in endPointObjects)
+        {
+            DestroyImmediate(item.gameObject);
+        }
+
+        endPointObjects = new List<GameObject>();
+
+        
+        
         
 
         InitializeFlowMapCreator();
 
-
         for (int i = 0; i < endPointObjects.Count; i++)
         {
-            endPointObjects[i].transform.position = vertPointEnds[i];
+            endPointObjects[i].transform.position = 
+                vertPointEnds[i];
             GetPointColors();
 
             endPointObjects[i].transform.GetComponent<MeshRenderer>().material.color = pointColors[i];
         }
 
+        InititalizeDebug();
+    }
 
+    public void InititalizeDebug()
+    {
         //DEBUGGING
         //let you see your flow map on the screen
         //makes a routine show you order vertPoints are stored in
@@ -123,21 +146,10 @@ public class FlowMapCreator : MonoBehaviour
 
     private void Update()
     {
-        UpdateEndpoints();
-        for (int x = 0; x < vertPoints.Count; x++)
-        {
-            Debug.DrawLine(vertPoints[x], vertPointEnds[x]);
-        }
-
+        UpdateAllEndpoints();
     }
 
-
-    void OnDrawGizmosSelected()
-    {
-        
-    }
-
-    void UpdateEndpoints()
+    public void UpdateAllEndpoints()
     {
         for (int i = 0; i < endPointObjects.Count; i++)
         {
@@ -146,13 +158,43 @@ public class FlowMapCreator : MonoBehaviour
             float pointRange = 0.6f;
 
             endPointObjects[i].transform.position = 
-                new Vector3(Mathf.Clamp(endPointObjects[i].transform.position.x, vertPoints[i].x - pointRange, vertPoints[i].x + pointRange), 
+                new Vector3(Mathf.Clamp(endPointObjects[i].transform.position.x, vertPoints[i].x - pointRange, vertPoints[i].x + pointRange),
                 Mathf.Clamp(endPointObjects[i].transform.position.y, vertPoints[i].y, vertPoints[i].y), 
                 Mathf.Clamp(endPointObjects[i].transform.position.z, vertPoints[i].z - pointRange, vertPoints[i].z + pointRange));
 
             GetPointColors();
 
             endPointObjects[i].transform.GetComponent<MeshRenderer>().material.color = pointColors[i];
+        }
+        for (int x = 0; x < vertPoints.Count; x++)
+        {
+            Debug.DrawLine(vertPoints[x], vertPointEnds[x]);
+        }
+    }
+
+    public void UpdateEndpoints(List<int> indexes)
+    {
+        foreach (int num in indexes)
+        {
+            Debug.Log(num);
+
+            vertPointEnds[num] =
+                endPointObjects[num].transform.position;
+
+            float pointRange = 0.6f;
+
+            //endPointObjects[num].transform.position =
+            //    new Vector3(Mathf.Clamp(endPointObjects[num].transform.position.x, vertPoints[num].x - pointRange, vertPoints[num].x + pointRange),
+            //    Mathf.Clamp(endPointObjects[num].transform.position.y, vertPoints[num].y, vertPoints[num].y),
+            //    Mathf.Clamp(endPointObjects[num].transform.position.z, vertPoints[num].z - pointRange, vertPoints[num].z + pointRange));
+            endPointObjects[num].transform.position =
+                new Vector3(Mathf.Clamp(endPointObjects[num].transform.position.x, vertPoints[num].x - pointRange, vertPoints[num].x + pointRange),
+                planeEndPointsRoot.transform.position.y,
+                Mathf.Clamp(endPointObjects[num].transform.position.z, vertPoints[num].z - pointRange, vertPoints[num].z + pointRange));
+
+            GetPointColors();
+
+            endPointObjects[num].transform.GetComponent<MeshRenderer>().material.color = pointColors[num];
         }
     }
 
@@ -176,12 +218,14 @@ public class FlowMapCreator : MonoBehaviour
             vertPointEnds.Add(new Vector3(vert.x, vert.y, vert.z));
 
             GameObject endPoint = Instantiate(endPointObject, vertPointEnds[i], Quaternion.identity, planeEndPointsRoot);
-
+            
             endPointObjects.Add(endPoint);
-
+            endPoint.GetComponent<EndPointBall>().index = i;
             vectorMagnitude.Add(0.3f);
         }
         pointColors = new Color[vertPoints.Count];
+
+       
     }
 
     //takes the position of the mesh vertexes and reorganizes to start from bottom left.
